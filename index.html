@@ -1,320 +1,93 @@
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#123c35">
-<title>Poker Night</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#102a25;color:#f5f5ef;font-family:Arial,sans-serif}
-header{text-align:center;padding:25px 12px;background:#164b3d}
-header h1{margin:8px 0;font-size:27px}
-header p{color:#c6ddd2;margin:5px}
-main{max-width:850px;margin:auto;padding:15px}
-nav{display:flex;gap:6px;overflow:auto;margin:12px 0}
-button,select,input{font:inherit}
-button{cursor:pointer}
-.tab,.secondary{background:#24483e;color:white;border:1px solid #547568;border-radius:9px;padding:11px}
-.tab.active,.primary{background:#d5ad55;color:#172b22;font-weight:bold}
-.primary{border:0;border-radius:9px;padding:13px;width:100%}
-.card{background:#193b32;border:1px solid #426356;border-radius:12px;padding:15px;margin:10px 0}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.stat{text-align:center;background:#193b32;border-radius:10px;padding:13px}
-.stat strong{display:block;font-size:22px}
-input,select{background:#102e27;color:white;border:1px solid #547568;padding:11px;border-radius:8px;width:100%;min-width:0}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}
-.game{background:#193b32;color:white;border:1px solid #547568;padding:13px;border-radius:10px;text-align:left;width:100%}
-.game.selected{border:2px solid #d5ad55}
-.small{font-size:13px;color:#bdd0c6}
-.rule{padding:10px 0;border-bottom:1px solid #426356;line-height:1.5}
-.hidden{display:none!important}
-.row{display:flex;gap:8px;align-items:center}
-.row>*{flex:1}
-h2{font-size:20px}
-h3{margin-bottom:5px}
-footer{text-align:center;color:#a9c1b5;font-size:12px;padding:20px}
-</style>
-</head>
-<body>
-<header>
-<div style="font-size:34px">♠ ♥ ♣ ♦</div>
-<h1>POKER NIGHT</h1>
-<p>Dealer's Choice · 8 Player Edition</p>
-</header>
-<main>
-<div class="stats">
-<div class="stat"><strong id="playerCount">8</strong><span class="small">Players</span></div>
-<div class="stat"><strong id="dealerSeat">1</strong><span class="small">Dealer seat</span></div>
-<div class="stat"><strong id="hands">0</strong><span class="small">Hands played</span></div>
-</div>
-<nav>
-<button class="tab active" data-tab="games">♠ Games</button>
-<button class="tab" data-tab="players">👥 Players</button>
-<button class="tab" data-tab="scores">💰 Scores</button>
-<button class="tab" data-tab="picker">🎲 Random</button>
-</nav>
-
-<section id="games">
-<h2>Dealer's Choice Game Library</h2>
-<input id="search" placeholder="Search games...">
-<select id="filter" style="margin:10px 0">
-<option>All</option><option>Hold'em</option><option>Omaha</option>
-<option>Stud</option><option>Draw</option><option>High-Low</option>
-<option>Wild & Crazy</option>
-</select>
-<div id="gameList" class="grid"></div>
-<div id="details" class="card hidden">
-<div class="row"><h2 id="gameTitle"></h2><button class="secondary" id="close">Close</button></div>
-<p class="small" id="description"></p>
-<h3>How to play</h3>
-<div id="rules"></div>
-<h3>Winning hand</h3><p id="winning"></p>
-<h3>8-player notes</h3><p id="notes" class="small"></p>
-<button class="primary" id="choose">Choose for next hand</button>
-</div>
-<div id="current" class="card hidden">
-<div class="small">NEXT HAND</div>
-<h2 id="currentName"></h2>
-<p id="currentDealer"></p>
-</div>
-</section>
-
-<section id="players" class="hidden">
-<h2>Your eight players</h2>
-<p class="small">Change the names at your table. Dealer rotates after every hand.</p>
-<div id="playerInputs"></div>
-<button class="primary" id="saveNames">Save player names</button>
-<div class="card">
-<h3>Dealer: <span id="dealerName"></span></h3>
-<button class="primary" id="nextHand">Finish hand and rotate dealer</button>
-<button class="secondary" style="width:100%;margin-top:8px" id="reset">Reset dealer and hands</button>
-</div>
-</section>
-
-<section id="scores" class="hidden">
-<h2>Chip Scorekeeper</h2>
-<p class="small">Enter each player's current chip balance. Update after each hand.</p>
-<div id="scoreInputs"></div>
-<button class="primary" id="saveScores">Save chip balances</button>
-<div class="card"><h3>Current standings</h3><div id="standings"></div></div>
-</section>
-
-<section id="picker" class="hidden">
-<div class="card" style="text-align:center">
-<div style="font-size:42px">🎲</div>
-<h2>Dealer's Choice Roulette</h2>
-<p class="small">Let the app pick your next game.</p>
-<button class="primary" id="random">PICK A GAME</button>
-</div>
-<div id="picked" class="card hidden">
-<h2 id="pickedName"></h2>
-<p id="pickedDesc"></p>
-<button class="primary" id="pickedChoose">Choose this game</button>
-<button class="secondary" style="width:100%;margin-top:8px" id="pickedRules">View rules</button>
-</div>
-</section>
-</main>
-<footer>POKER NIGHT · 8 SEATS · ONE STANDARD DECK</footer>
-
-<script>
-const games=[
-['Texas Hold’em','Hold’em','Classic community-card poker.',[
-'Deal 2 private cards to each player.',
-'Betting round, then deal 3 community cards called the flop.',
-'Bet again, then deal the turn card.',
-'Bet again, then deal the river card.',
-'Final betting round. Use any 5 cards from your 2 private cards and the 5 community cards.'
-],'Best standard 5-card poker hand.','Perfect for 8 players.'],
-['Omaha Hi','Omaha','Four private cards. Exactly two must be used.',[
-'Deal 4 private cards to each player.',
-'Deal flop, turn and river as in Hold’em.',
-'Players must use exactly 2 private cards and exactly 3 community cards.',
-'Bet after each street.'
-],'Best standard 5-card poker hand.','Great for 8 players.'],
-['Omaha Hi-Lo','High-Low','The pot is split between high and low.',[
-'Deal 4 private cards to each player.',
-'Use exactly 2 private cards and 3 community cards.',
-'High hand wins half the pot.',
-'Low hand must have five different ranks of 8 or lower. Aces count as low.',
-'If there is no qualifying low, high wins the entire pot.'
-],'Best high hand and best qualifying low hand.','8 players fit. Agree on split-pot rules first.'],
-['Pineapple','Hold’em','Three starting cards, discard before the flop.',[
-'Deal 3 private cards to every player.',
-'Each player discards 1 card face down before the flop.',
-'Deal the flop, turn and river.',
-'Bet after each street.',
-'Use your remaining 2 cards and the board to make the best hand.'
-],'Best standard 5-card poker hand.','8 players fit with one deck.'],
-['Crazy Pineapple','Hold’em','Three starting cards, discard after the flop.',[
-'Deal 3 private cards to every player.',
-'Deal the flop of 3 community cards.',
-'After the flop betting round, each player discards 1 private card face down.',
-'Deal the turn and river, with betting after each.',
-'Use your remaining 2 cards and the 5 community cards.'
-],'Best standard 5-card poker hand.','8 players fit with one deck.'],
-['Lazy Pineapple','Hold’em','Keep all three private cards until showdown.',[
-'Deal 3 private cards to each player.',
-'Deal the flop, turn and river as in Hold’em.',
-'Bet after each street.',
-'At showdown, discard one private card and make the best 5-card hand using the other 2 and the board.'
-],'Best standard 5-card poker hand.','8 players fit with one deck.'],
-['Polish Pineapple','Hold’em','A house-rule Pineapple variation. Agree on the discard timing before play.',[
-'Deal 3 private cards to each player.',
-'Agree whether the discard happens before the flop, after the flop or at showdown.',
-'Deal the 5 community cards in the usual flop, turn and river sequence.',
-'Complete betting rounds after each street.',
-'Use the agreed two private cards and the community cards to make your best hand.'
-],'Best standard 5-card poker hand.','Polish Pineapple is not governed by one universally accepted rule set. Confirm your table version before dealing.'],
-['Five Card Draw','Draw','Classic poker with a card exchange.',[
-'Deal 5 cards face down to each player.',
-'First betting round.',
-'Players discard up to 3 cards and receive replacements.',
-'Second betting round.',
-'Showdown.'
-],'Best standard 5-card poker hand.','8 players fit with one deck.'],
-['Seven Card Stud','Stud','Traditional poker with face-up and face-down cards.',[
-'Deal 2 cards face down and 1 face up.',
-'Deal 3 more face-up cards one at a time, with betting rounds.',
-'Deal the final card face down.',
-'Final betting round. Make your best 5-card hand from your 7 cards.'
-],'Best standard 5-card poker hand.','With 8 players, a shared final card may be needed if the deck runs short.'],
-['Razz','Stud','Seven Card Stud played for the lowest hand.',[
-'Deal 2 down cards and 1 up card.',
-'Deal 3 more face-up cards and a final down card, with betting rounds.',
-'Aces are low. Straights and flushes do not count against a low hand.'
-],'Lowest unpaired five-card hand. A-2-3-4-5 is best.','Use a shared final card if the deck runs short.'],
-['Follow the Queen','Wild & Crazy','Stud with a changing wild card.',[
-'Play using Seven Card Stud dealing.',
-'When a queen appears face up, the next face-up card dealt becomes wild.',
-'If another queen appears, the wild rank changes to the next face-up card.',
-'Continue normal betting rounds.'
-],'Best 5-card poker hand with wild cards.','Agree whether queens themselves are wild.'],
-['Baseball','Wild & Crazy','Stud with wild cards.',[
-'Deal as Seven Card Stud.',
-'Threes and nines are wild.',
-'A face-up four earns an extra card. Agree on any fee or betting rule first.',
-'Continue Stud betting rounds.'
-],'Best 5-card poker hand.','8 players. Agree on extra-card rules first.'],
-['Anaconda','Draw','Pass cards around the table.',[
-'Deal 7 cards to each player.',
-'Each player chooses 3 cards and passes them left.',
-'Choose 2 cards to pass right.',
-'Choose 1 card to pass left.',
-'Make the best 5-card hand from the 7 cards you finish with.'
-],'Best standard 5-card poker hand.','8 players fit with one deck. Agree on betting rounds first.'],
-['Chicago','High-Low','Split pot between high hand and highest spade face down.',[
-'Deal 7 cards as in Stud.',
-'Bet through the normal Stud streets.',
-'At showdown, best high hand wins half.',
-'Highest spade held face down wins the other half.'
-],'Best high hand and highest hidden spade.','Agree on tie rules before play.'],
-['Five Card Stud','Stud','Simple five-card Stud.',[
-'Deal 1 card face down and 1 face up.',
-'Deal 3 additional face-up cards one at a time.',
-'Bet after each new card.',
-'Showdown.'
-],'Best standard 5-card poker hand.','8 players fit with one deck.'],
 ['Seven Card Stud Hi-Lo','High-Low','Stud with a split high and low pot.',[
 'Deal seven cards as in Seven Card Stud.',
 'Bet after each street.',
 'At showdown, high wins half and qualifying low wins half.',
 'Low must have five distinct ranks of 8 or lower. Aces are low.'
-],'Best high hand and qualifying 8-or-better low hand.','8 players may need a shared final card.']
-];
+],'Best high hand and qualifying 8-or-better low hand.','8 players may need a shared final card.'],
 
-let names=Array.from({length:8},(_,i)=>'Player '+(i+1));
-let chips=Array(8).fill(1000),dealer=0,hands=0,selected=null,picked=null;
+['3-Card Low','High-Low','Three-card draw poker. Lowest hand wins.',[
+'Deal 3 cards face down to each player.',
+'First betting round.',
+'Each player may discard and replace up to 3 cards.',
+'Final betting round.',
+'Aces are low. Pairs count against you. Compare the highest card first, then the next highest.'
+],'Lowest unpaired three-card hand wins. A-2-3 is the best possible hand.','8 players fit with one deck. Agree on straight and flush rankings before play.'],
 
-const $=id=>document.getElementById(id);
-const safe=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+['2-7 Triple Draw','Draw','Lowball poker with three drawing rounds.',[
+'Deal 5 cards to each player.',
+'Betting round.',
+'Players draw and replace cards up to three times.',
+'Bet after each draw.',
+'Aces are high. Straights and flushes count against you.'
+],'Lowest unpaired hand wins. 7-5-4-3-2 is the best hand.','8 players fit.'],
 
-function showTab(tab){
-document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
-['games','players','scores','picker'].forEach(t=>$(t).classList.toggle('hidden',t!==tab));
-}
-document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+['2-7 Single Draw','Draw','Lowball poker with one chance to improve.',[
+'Deal 5 cards to each player.',
+'First betting round.',
+'Each player may discard and replace up to 5 cards.',
+'Final betting round.',
+'Aces are high. Straights and flushes count against you.'
+],'Lowest unpaired hand wins. 7-5-4-3-2 is best.','8 players fit.'],
 
-function renderGames(){
-let q=$('search').value.toLowerCase(),filter=$('filter').value;
-let list=games.filter(g=>(filter==='All'||g[1]===filter)&&(g[0]+' '+g[2]).toLowerCase().includes(q));
-$('gameList').innerHTML=list.map(g=>`<button class="game" data-name="${safe(g[0])}"><strong>${safe(g[0])}</strong><div class="small">${safe(g[1])}</div><p>${safe(g[2])}</p></button>`).join('');
-document.querySelectorAll('.game').forEach(b=>b.onclick=()=>showGame(b.dataset.name));
-}
-function showGame(name){
-selected=games.find(g=>g[0]===name);
-if(!selected)return;
-$('details').classList.remove('hidden');
-$('gameTitle').textContent=selected[0];
-$('description').textContent=selected[2];
-$('rules').innerHTML=selected[3].map((r,i)=>`<div class="rule">${i+1}. ${safe(r)}</div>`).join('');
-$('winning').textContent=selected[4];
-$('notes').textContent=selected[5];
-$('details').scrollIntoView({behavior:'smooth'});
-}
-$('search').oninput=renderGames;
-$('filter').onchange=renderGames;
-$('close').onclick=()=>$('details').classList.add('hidden');
+['Badugi','Draw','Four-card lowball poker.',[
+'Deal 4 cards to each player.',
+'Complete a betting round.',
+'Allow up to three drawing rounds.',
+'Players try to make four cards of different ranks and different suits.',
+'An ace is low. A hand with fewer qualifying cards loses to a four-card Badugi.'
+],'Lowest four-card Badugi wins. A-2-3-4 in four different suits is best.','8 players fit.'],
 
-function chooseGame(g){
-$('current').classList.remove('hidden');
-$('currentName').textContent=g[0];
-$('currentDealer').textContent='Dealer: '+names[dealer];
-}
-$('choose').onclick=()=>selected&&chooseGame(selected);
+['Cincinnati','High-Low','Community-card poker with four private cards.',[
+'Deal 4 private cards to each player.',
+'Place 5 community cards face down in the centre.',
+'Reveal community cards one at a time, with a betting round after each.',
+'Players use their best 5-card combination from their private cards and the community cards.'
+],'Best standard 5-card poker hand.','8 players fit.'],
 
-function renderPlayers(){
-$('playerInputs').innerHTML=names.map((n,i)=>`
-<div class="row card">
-<strong>${i+1}${i===dealer?' ♠':''}</strong>
-<input data-name="${i}" value="${safe(n)}">
-</div>`).join('');
-}
-$('saveNames').onclick=()=>{
-document.querySelectorAll('[data-name]').forEach(i=>names[+i.dataset.name]=i.value.trim()||'Player '+(+i.dataset.name+1));
-renderPlayers();update();
-};
-function update(){
-$('playerCount').textContent=names.length;
-$('dealerSeat').textContent=dealer+1;
-$('hands').textContent=hands;
-$('dealerName').textContent=names[dealer];
-$('currentDealer').textContent='Dealer: '+names[dealer];
-}
-$('nextHand').onclick=()=>{
-hands++;dealer=(dealer+1)%8;update();renderPlayers();
-};
-$('reset').onclick=()=>{
-hands=0;dealer=0;update();renderPlayers();
-$('current').classList.add('hidden');
-};
+['Irish Poker','Omaha','Starts like Omaha and finishes like Hold’em.',[
+'Deal 4 private cards to each player.',
+'Betting round.',
+'Deal the flop.',
+'Each player discards 2 private cards face down.',
+'Continue with the turn and river.',
+'Use your remaining 2 private cards and exactly 3 community cards.'
+],'Best standard 5-card poker hand.','8 players fit with one deck.'],
 
-function renderScores(){
-$('scoreInputs').innerHTML=names.map((n,i)=>`
-<div class="row card">
-<label>${safe(n)}</label>
-<input type="number" min="0" data-chip="${i}" value="${chips[i]}">
-</div>`).join('');
-$('standings').innerHTML=names.map((n,i)=>({name:n,chip:chips[i]}))
-.sort((a,b)=>b.chip-a.chip)
-.map((p,i)=>`<div class="rule">${i+1}. ${safe(p.name)} <strong style="float:right">${p.chip.toLocaleString()} chips</strong></div>`).join('');
-}
-$('saveScores').onclick=()=>{
-document.querySelectorAll('[data-chip]').forEach(i=>chips[+i.dataset.chip]=Math.max(0,Number(i.value)||0));
-renderScores();
-};
+['Guts','Wild & Crazy','A high-pressure showdown game.',[
+'Deal 2 private cards to each player.',
+'Everyone decides whether to stay in or fold.',
+'Players staying in reveal their hands.',
+'The highest hand wins the pot.',
+'Players who stay in and lose each owe an agreed contribution to the next pot.'
+],'Highest standard 2-card poker hand. Agree on hand rankings and contributions before play.','8 players fit. Set a maximum contribution to keep the game friendly.'],
 
-$('random').onclick=()=>{
-picked=games[Math.floor(Math.random()*games.length)];
-$('picked').classList.remove('hidden');
-$('pickedName').textContent=picked[0];
-$('pickedDesc').textContent=picked[2];
-};
-$('pickedChoose').onclick=()=>{if(picked){chooseGame(picked);showTab('games')}};
-$('pickedRules').onclick=()=>{if(picked){showTab('games');showGame(picked[0])}};
+['Mexican Stud','Stud','A five-card Stud variation.',[
+'Deal 5 cards to each player, with one card face up and four face down.',
+'Players may look at their private cards.',
+'Complete a betting round.',
+'Showdown after all players have had their turn.'
+],'Best standard 5-card poker hand.','8 players fit. This is a house-rule version of Mexican Stud.'],
 
-renderGames();renderPlayers();renderScores();update();
-</script>
-</body>
-</html>
+['Dr Pepper','Wild & Crazy','Stud with three wild ranks.',[
+'Deal 5 cards to each player.',
+'All twos, fours and tens are wild.',
+'Betting round.',
+'Players may exchange up to 3 cards.',
+'Final betting round and showdown.'
+],'Highest standard 5-card poker hand using wild cards.','8 players fit with one deck.'],
+
+['Blind Man’s Bluff','Wild & Crazy','You see everyone’s cards except your own.',[
+'Deal one card face up to each player, but players must not look at their own card.',
+'Each player holds their card facing outward or places it on their forehead.',
+'Everyone sees the other players cards.',
+'Complete a betting round.',
+'Players reveal their own cards.'
+],'Highest card wins. Agree on tie rules before play.','8 players fit. A fun quick game.'],
+
+['Five Card Stud Hi-Lo','High-Low','Five-card Stud with a split pot.',[
+'Deal one card face down and one face up to each player.',
+'Deal three additional face-up cards one at a time.',
+'Bet after each street.',
+'At showdown, split the pot between high and qualifying low.'
+],'Best high hand and best qualifying five-card low hand. Agree on the low qualification before play.','8 players fit with one deck.']
